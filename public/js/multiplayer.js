@@ -160,6 +160,10 @@ const Multiplayer = {
         this.emit('rematch_proposed', message);
         break;
 
+      case 'chat':
+        this.emit('chat', message);
+        break;
+
       case 'state_sync':
         // Full state sync after reconnect
         this.roomCode = message.roomCode;
@@ -262,6 +266,10 @@ const Multiplayer = {
     this.isHost = false;
     this.players = [];
     this.gameState = null;
+  },
+
+  sendChat(text) {
+    this.send({ type: 'chat', roomCode: this.roomCode, text });
   },
 
   // Helpers
