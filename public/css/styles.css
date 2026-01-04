@@ -934,6 +934,7 @@ button {
     justify-content: space-between;
     padding: 12px 15px;
     background: rgba(255,255,255,0.05);
+    position: relative;
 }
 
 .chat-header h3 {
@@ -943,14 +944,17 @@ button {
 }
 
 .chat-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
     background: none;
     border: none;
     color: #888;
-    font-size: 1.2rem;
+    font-size: 1rem;
     cursor: pointer;
     padding: 0;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
