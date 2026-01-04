@@ -71,6 +71,9 @@ function handleMessage(ws, message) {
     case 'leave_room':
       handleLeaveRoom(ws);
       break;
+    case 'chat':
+      handleChat(ws, message);
+      break;
     default:
       send(ws, { type: 'error', message: 'Unknown message type' });
   }
@@ -435,6 +438,30 @@ function handleLeaveRoom(ws) {
       newHost: result.room.host
     });
   }
+}
+
+function handleChat(ws, { roomCode, text }) {
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    return;
+  }
+
+  const room = getRoom(roomCode);
+  if (!room) return;
+
+  const player = room.players.find(p => p.id === ws.playerId);
+  if (!player) return;
+
+  // Limit message length
+  const message = text.trim().slice(0, 200);
+
+  // Broadcast to all players in the room (including sender)
+  broadcastAll(room, {
+    type: 'chat',
+    playerId: player.id,
+    nickname: player.nickname,
+    text: message,
+    timestamp: Date.now()
+  });
 }
 
 function handleClose(ws) {

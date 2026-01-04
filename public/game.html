@@ -79,6 +79,18 @@
                 <div id="other-players-content"></div>
             </div>
 
+            <div class="chat-container" id="chat-container">
+                <div class="chat-header" id="chat-header">
+                    <h3>Chat</h3>
+                    <span class="chat-badge" id="chat-badge"></span>
+                </div>
+                <div class="chat-messages" id="chat-messages"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
+                    <button class="chat-send-btn" id="btn-send-chat">Send</button>
+                </div>
+            </div>
+
             <div class="rules">
                 <h3>How to Play</h3>
                 <ul>
@@ -589,6 +601,67 @@
             document.getElementById('btn-rematch').textContent = 'Rematch';
             document.getElementById('btn-rematch').disabled = false;
             startGame({});
+        });
+
+        // Chat handling
+        let unreadMessages = 0;
+
+        Multiplayer.on('chat', (data) => {
+            addChatMessage(data.nickname, data.text, data.playerId === Multiplayer.playerId);
+        });
+
+        function addChatMessage(nickname, text, isMe) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'chat-message' + (isMe ? ' me' : '');
+            messageEl.innerHTML = `<span class="chat-nickname">${escapeHtml(nickname)}</span><span class="chat-text">${escapeHtml(text)}</span>`;
+            messagesDiv.appendChild(messageEl);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Show badge if chat is collapsed and message is from someone else
+            if (!isMe) {
+                const container = document.getElementById('chat-container');
+                if (container.classList.contains('collapsed')) {
+                    unreadMessages++;
+                    updateChatBadge();
+                }
+            }
+        }
+
+        function updateChatBadge() {
+            const badge = document.getElementById('chat-badge');
+            if (unreadMessages > 0) {
+                badge.textContent = unreadMessages > 9 ? '9+' : unreadMessages;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (text) {
+                Multiplayer.sendChat(text);
+                input.value = '';
+            }
+        }
+
+        document.getElementById('btn-send-chat').addEventListener('click', sendChatMessage);
+
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        document.getElementById('chat-header').addEventListener('click', () => {
+            const container = document.getElementById('chat-container');
+            container.classList.toggle('collapsed');
+            if (!container.classList.contains('collapsed')) {
+                unreadMessages = 0;
+                updateChatBadge();
+            }
         });
 
         function showToast(message) {
