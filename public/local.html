@@ -10,13 +10,23 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        html {
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
+            min-height: 100%;
+            height: 100%;
             margin: 0;
             padding: 20px;
             color: #fff;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            overscroll-behavior: none;
         }
 
         .container {
@@ -47,30 +57,37 @@
         }
 
         .player-select {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            justify-content: center;
             margin-bottom: 20px;
         }
 
-        .player-btn {
-            width: 60px;
-            height: 60px;
+        .player-dropdown {
+            width: 100%;
+            max-width: 200px;
+            padding: 16px 20px;
             border-radius: 12px;
             background: rgba(255,255,255,0.1);
-            border: 2px solid transparent;
+            border: 2px solid rgba(255,255,255,0.2);
             color: #fff;
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.2rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-            touch-action: manipulation;
+            appearance: none;
+            -webkit-appearance: none;
+            text-align: center;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2'%3E%3Cpolyline points='6,9 12,15 18,9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
         }
 
-        .player-btn.selected {
+        .player-dropdown:focus {
+            outline: none;
             border-color: #667eea;
-            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .player-dropdown option {
+            background: #1a1a2e;
+            color: #fff;
         }
 
         .btn-start {
@@ -507,13 +524,16 @@
             <h1>3s</h1>
             <p class="subtitle">The low-score dice game</p>
             <h2>How many players?</h2>
-            <div class="player-select" id="player-select">
-                <button class="player-btn" data-players="1">1</button>
-                <button class="player-btn" data-players="2">2</button>
-                <button class="player-btn" data-players="3">3</button>
-                <button class="player-btn" data-players="4">4</button>
-                <button class="player-btn" data-players="5">5</button>
-                <button class="player-btn" data-players="6">6</button>
+            <div class="player-select">
+                <select class="player-dropdown" id="player-select">
+                    <option value="" disabled selected>Select...</option>
+                    <option value="1">1 Player</option>
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4">4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
             </div>
             <button class="btn-start" id="btn-start" disabled>Start Game</button>
         </div>
@@ -865,10 +885,7 @@
             document.getElementById('game-screen').style.display = 'none';
             document.getElementById('setup-screen').style.display = 'block';
 
-            var btns = document.querySelectorAll('.player-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].classList.remove('selected');
-            }
+            document.getElementById('player-select').selectedIndex = 0;
             document.getElementById('btn-start').disabled = true;
 
             renderDice();
@@ -912,17 +929,9 @@
             newGame();
         });
 
-        document.getElementById('player-select').addEventListener('click', function(e) {
-            var btn = e.target.closest('.player-btn');
-            if (btn) {
-                var btns = document.querySelectorAll('.player-btn');
-                for (var i = 0; i < btns.length; i++) {
-                    btns[i].classList.remove('selected');
-                }
-                btn.classList.add('selected');
-                numPlayers = parseInt(btn.dataset.players);
-                document.getElementById('btn-start').disabled = false;
-            }
+        document.getElementById('player-select').addEventListener('change', function(e) {
+            numPlayers = parseInt(e.target.value);
+            document.getElementById('btn-start').disabled = false;
         });
 
         document.getElementById('btn-start').addEventListener('click', function(e) {
