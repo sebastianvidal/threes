@@ -3,6 +3,10 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+html {
+    background-color: #1a1a2e;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -11,6 +15,13 @@ body {
     padding: 20px;
     color: #fff;
     overscroll-behavior: none;
+}
+
+body.no-scroll {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .container {
