@@ -111,7 +111,6 @@ const Multiplayer = {
         break;
 
       case 'game_started':
-      case 'rematch_started':
         this.players = message.players;
         this.currentPlayerIndex = message.currentPlayerIndex;
         this.gameState = {
@@ -120,6 +119,17 @@ const Multiplayer = {
           currentPlayerId: message.currentPlayerId
         };
         this.emit('game_started', message);
+        break;
+
+      case 'rematch_started':
+        this.players = message.players;
+        this.currentPlayerIndex = message.currentPlayerIndex;
+        this.gameState = {
+          status: 'playing',
+          currentPlayerIndex: message.currentPlayerIndex,
+          currentPlayerId: message.currentPlayerId
+        };
+        this.emit('rematch_started', message);
         break;
 
       case 'turn_started':

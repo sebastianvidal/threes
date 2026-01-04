@@ -128,6 +128,11 @@
         let hasKeptThisRoll = false;
         let playerResults = {};
 
+        // Spectating state (what current player is doing)
+        let spectatingActive = [];
+        let spectatingKept = [];
+        let spectatingRolls = 5;
+
         // Connect and set up handlers
         async function init() {
             try {
@@ -297,6 +302,11 @@
         function handleTurnStarted(data) {
             Multiplayer.currentPlayerIndex = data.currentPlayerIndex;
 
+            // Reset spectating state
+            spectatingActive = [];
+            spectatingKept = [];
+            spectatingRolls = 5;
+
             // Reset my state if it's my turn
             if (Multiplayer.isMyTurn()) {
                 activeDice = [];
@@ -319,6 +329,11 @@
                 hasKeptThisRoll = false;
                 selectedIndices.clear();
                 isRolling = false;
+            } else {
+                // Spectating another player
+                spectatingActive = data.activeDice;
+                spectatingKept = data.keptDice;
+                spectatingRolls = data.rollsLeft;
             }
             updateGameUI();
         }
@@ -329,6 +344,10 @@
                 keptDice = data.keptDice;
                 hasKeptThisRoll = true;
                 selectedIndices.clear();
+            } else {
+                // Spectating another player
+                spectatingActive = data.activeDice;
+                spectatingKept = data.keptDice;
             }
             updateGameUI();
         }
@@ -392,10 +411,11 @@
             // Update dice
             renderDice();
 
-            // Update scores
-            document.getElementById('rolls-left').textContent = rollsLeft;
-            document.getElementById('kept-score').textContent = GameCore.calculateScore(keptDice);
-            document.getElementById('current-score').textContent = GameCore.calculateScore(keptDice);
+            // Update scores (show spectating values if not your turn)
+            const showRolls = isMyTurn ? rollsLeft : spectatingRolls;
+            const showKept = isMyTurn ? keptDice : spectatingKept;
+            document.getElementById('rolls-left').textContent = showRolls;
+            document.getElementById('current-score').textContent = GameCore.calculateScore(showKept);
 
             // Update buttons
             const rollBtn = document.getElementById('btn-roll');
@@ -417,19 +437,26 @@
             const keptContainer = document.getElementById('kept-dice');
             const isMyTurn = Multiplayer.isMyTurn();
 
+            // Decide which dice to show
+            const showActive = isMyTurn ? activeDice : spectatingActive;
+            const showKept = isMyTurn ? keptDice : spectatingKept;
+
             // Active dice
-            if (activeDice.length === 0) {
-                if (!hasRolledThisRound && isMyTurn) {
+            if (showActive.length === 0) {
+                if (isMyTurn && !hasRolledThisRound) {
                     activeContainer.innerHTML = '<div class="empty-dice">Press Roll to start</div>';
-                } else if (!isMyTurn) {
-                    activeContainer.innerHTML = '<div class="empty-dice">Waiting for your turn...</div>';
+                } else if (isMyTurn) {
+                    activeContainer.innerHTML = '<div class="empty-dice">All dice kept</div>';
+                } else if (spectatingKept.length === 0 && spectatingActive.length === 0) {
+                    const current = Multiplayer.getCurrentPlayer();
+                    activeContainer.innerHTML = `<div class="empty-dice">Waiting for ${current?.nickname || 'player'} to roll...</div>`;
                 } else {
                     activeContainer.innerHTML = '<div class="empty-dice">All dice kept</div>';
                 }
             } else {
-                activeContainer.innerHTML = activeDice.map((d, i) => {
+                activeContainer.innerHTML = showActive.map((d, i) => {
                     const isThree = d === 3;
-                    const isSelected = selectedIndices.has(i);
+                    const isSelected = isMyTurn && selectedIndices.has(i);
                     const disabled = !isMyTurn;
                     return `<div class="die ${isThree ? 'three' : ''} ${isSelected ? 'selected' : ''} ${disabled ? 'disabled' : ''}"
                                 data-index="${i}">${d}</div>`;
@@ -437,14 +464,17 @@
             }
 
             // Kept dice
-            if (keptDice.length === 0) {
+            if (showKept.length === 0) {
                 keptContainer.innerHTML = '';
             } else {
-                keptContainer.innerHTML = keptDice.map(d => {
+                keptContainer.innerHTML = showKept.map(d => {
                     const isThree = d === 3;
                     return `<div class="die kept ${isThree ? 'three' : ''}">${d}</div>`;
                 }).join('');
             }
+
+            // Update kept score display
+            document.getElementById('kept-score').textContent = GameCore.calculateScore(showKept);
         }
 
         function updateMessage(isMyTurn) {
@@ -452,7 +482,20 @@
 
             if (!isMyTurn) {
                 const current = Multiplayer.getCurrentPlayer();
-                msg.textContent = current ? `Waiting for ${current.nickname}...` : 'Waiting...';
+                if (!current) {
+                    msg.textContent = 'Waiting...';
+                } else if (spectatingActive.length > 0) {
+                    const threes = spectatingActive.filter(d => d === 3).length;
+                    if (threes > 0) {
+                        msg.textContent = `${current.nickname} rolled ${threes} three${threes > 1 ? 's' : ''}!`;
+                    } else {
+                        msg.textContent = `${current.nickname} is choosing dice to keep...`;
+                    }
+                } else if (spectatingKept.length > 0) {
+                    msg.textContent = `${current.nickname} has ${spectatingRolls} roll${spectatingRolls !== 1 ? 's' : ''} left...`;
+                } else {
+                    msg.textContent = `Watching ${current.nickname}...`;
+                }
                 return;
             }
 
