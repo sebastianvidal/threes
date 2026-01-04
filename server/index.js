@@ -22,9 +22,9 @@ app.get('/health', (req, res) => {
 app.use('/api/rooms', roomsRouter);
 app.use('/api/history', historyRouter);
 
-// Join room via shareable link
+// Join room via shareable link - serve index.html which has join modal
 app.get('/join/:code', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/game.html'));
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Fallback to index for SPA-like behavior

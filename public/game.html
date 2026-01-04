@@ -356,10 +356,21 @@
             playerResults[data.playerId] = data.finalScore;
 
             if (data.playerId === Multiplayer.playerId) {
-                // Show my final dice briefly
+                // Show my final dice
                 keptDice = data.finalDice;
                 activeDice = [];
+            } else {
+                // Show their final dice for spectators
+                spectatingKept = data.finalDice;
+                spectatingActive = [];
             }
+
+            // Show turn result message
+            const player = Multiplayer.players.find(p => p.id === data.playerId);
+            const msg = document.getElementById('message');
+            const threes = data.finalDice.filter(d => d === 3).length;
+            const comment = threes === 5 ? 'PERFECT!' : (threes >= 3 ? 'Nice!' : '');
+            msg.innerHTML = `<strong>${escapeHtml(player?.nickname || 'Player')}</strong> finished with <strong>${data.finalScore} points</strong> ${comment}`;
 
             updateGameUI();
             updateOtherPlayers();

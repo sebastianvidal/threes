@@ -309,18 +309,21 @@ function endTurn(room, playerIndex) {
 
   // Check if game is over
   if (playerIndex === room.players.length - 1) {
-    endGame(room);
+    // Delay before showing final results
+    setTimeout(() => endGame(room), 3000);
   } else {
-    // Next player's turn
-    room.game.currentPlayerIndex++;
-    const nextPlayer = room.players[room.game.currentPlayerIndex];
+    // Next player's turn - delay so everyone can see the results
+    setTimeout(() => {
+      room.game.currentPlayerIndex++;
+      const nextPlayer = room.players[room.game.currentPlayerIndex];
 
-    broadcastAll(room, {
-      type: 'turn_started',
-      currentPlayerIndex: room.game.currentPlayerIndex,
-      currentPlayerId: nextPlayer.id,
-      currentPlayerNickname: nextPlayer.nickname
-    });
+      broadcastAll(room, {
+        type: 'turn_started',
+        currentPlayerIndex: room.game.currentPlayerIndex,
+        currentPlayerId: nextPlayer.id,
+        currentPlayerNickname: nextPlayer.nickname
+      });
+    }, 3000);
   }
 }
 
