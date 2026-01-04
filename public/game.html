@@ -112,7 +112,7 @@
     <script>
         // Get room code from URL
         const params = new URLSearchParams(window.location.search);
-        const roomCode = params.get('room');
+        let roomCode = params.get('room');
 
         if (!roomCode) {
             window.location.href = '/';
@@ -133,7 +133,24 @@
             try {
                 await Multiplayer.connect();
 
-                // Try to reconnect to existing room
+                // Check if we have pending room info from index.html
+                const pendingRoom = localStorage.getItem('threes_pending_room');
+                if (pendingRoom) {
+                    const info = JSON.parse(pendingRoom);
+                    if (info.roomCode === roomCode) {
+                        localStorage.removeItem('threes_pending_room');
+                        if (info.isHost) {
+                            // Host needs to create room again (old connection closed)
+                            Multiplayer.createRoom(info.nickname);
+                        } else {
+                            // Joiner can just join
+                            Multiplayer.joinRoom(roomCode, info.nickname);
+                        }
+                        return;
+                    }
+                }
+
+                // Try to reconnect to existing room (for page refresh)
                 Multiplayer.send({
                     type: 'reconnect',
                     roomCode: roomCode,
@@ -177,6 +194,11 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('lobby-screen').style.display = 'block';
             document.getElementById('room-code').textContent = data.roomCode;
+            // Update URL if room code changed (host created new room)
+            if (data.roomCode !== roomCode) {
+                window.history.replaceState({}, '', `/game.html?room=${data.roomCode}`);
+                roomCode = data.roomCode;
+            }
             updatePlayerList();
         }
 

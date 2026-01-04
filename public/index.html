@@ -135,6 +135,13 @@
                 await Multiplayer.connect();
 
                 Multiplayer.on('room_joined', (data) => {
+                    // Store player info for game.html to use
+                    localStorage.setItem('threes_pending_room', JSON.stringify({
+                        roomCode: data.roomCode,
+                        playerId: data.playerId,
+                        isHost: data.isHost,
+                        nickname: document.getElementById('nickname-input').value.trim()
+                    }));
                     // Redirect to game page
                     window.location.href = `/game.html?room=${data.roomCode}`;
                 });
