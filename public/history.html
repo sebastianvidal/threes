@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3s - Match History</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="history-page">
+            <a href="/" class="back-link">← Back to Home</a>
+
+            <h1>3s</h1>
+            <p class="subtitle">Match History</p>
+
+            <div class="landing-options" style="margin-bottom: 20px;">
+                <button class="landing-btn" id="btn-my-games" style="flex: 1;">
+                    <h3>My Games</h3>
+                    <p>Games you've played</p>
+                </button>
+                <button class="landing-btn" id="btn-all-games" style="flex: 1;">
+                    <h3>All Games</h3>
+                    <p>Recent games</p>
+                </button>
+            </div>
+
+            <div id="games-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sessionId = localStorage.getItem('threes_session_id');
+        let showingMine = false;
+
+        document.getElementById('btn-my-games').addEventListener('click', () => {
+            showingMine = true;
+            loadGames();
+        });
+
+        document.getElementById('btn-all-games').addEventListener('click', () => {
+            showingMine = false;
+            loadGames();
+        });
+
+        async function loadGames() {
+            const container = document.getElementById('games-list');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading...</p></div>';
+
+            try {
+                let url = '/api/history';
+                if (showingMine && sessionId) {
+                    url = `/api/history/mine/${sessionId}`;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load');
+
+                const games = await response.json();
+
+                if (games.length === 0) {
+                    container.innerHTML = '<div class="empty-history">No games found</div>';
+                    return;
+                }
+
+                container.innerHTML = games.map(game => {
+                    const date = new Date(game.finished_at);
+                    const timeAgo = getTimeAgo(date);
+
+                    const participants = game.participants || [];
+
+                    return `
+                        <div class="history-game-card">
+                            <div class="history-game-header">
+                                <span>Room: ${escapeHtml(game.room_code)}</span>
+                                <span>${timeAgo}</span>
+                            </div>
+                            <div class="history-game-winner">
+                                Winner: ${escapeHtml(game.winner_nickname || 'Unknown')} (${game.winning_score} pts)
+                            </div>
+                            <div class="modal-scores">
+                                ${participants.map(p => `
+                                    <div class="modal-score-row ${p.isWinner ? 'winner-row' : ''}">
+                                        <span class="modal-player-name">${escapeHtml(p.nickname)}</span>
+                                        <span class="modal-player-dice">
+                                            ${(p.dice || []).map(d => `<span class="modal-die ${d === 3 ? 'three' : ''}">${d}</span>`).join('')}
+                                        </span>
+                                        <span class="modal-player-score">${p.score}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = '<div class="empty-history">Failed to load games</div>';
+            }
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + 'd ago';
+
+            return date.toLocaleDateString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // Load all games by default
+        loadGames();
+    </script>
+</body>
+</html>

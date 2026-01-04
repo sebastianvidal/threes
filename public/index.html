@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3s - The Low-Score Dice Game</title>
+    <meta name="description" content="A multiplayer dice game where 3s are worth zero. Lowest score wins!">
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="landing-screen" id="landing-screen">
+            <h1>3s</h1>
+            <p class="subtitle">The low-score dice game</p>
+
+            <div class="landing-options">
+                <button class="landing-btn" id="btn-create">
+                    <h3>Create Room</h3>
+                    <p>Start a new multiplayer game</p>
+                </button>
+
+                <button class="landing-btn" id="btn-join">
+                    <h3>Join Room</h3>
+                    <p>Enter a room code to join</p>
+                </button>
+
+                <a href="/local.html" class="landing-btn" style="text-decoration: none;">
+                    <h3>Play Local</h3>
+                    <p>Same device, pass-and-play</p>
+                </a>
+
+                <a href="/history.html" class="landing-btn" style="text-decoration: none;">
+                    <h3>Match History</h3>
+                    <p>View past games</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- Nickname Modal -->
+        <div class="modal-overlay nickname-modal" id="nickname-modal" style="display: none;">
+            <div class="modal">
+                <h2 id="modal-title">Enter Your Name</h2>
+                <input type="text" class="nickname-input" id="nickname-input"
+                       placeholder="Your nickname" maxlength="20" autocomplete="off">
+                <div class="input-group" id="room-code-group" style="display: none;">
+                    <label>Room Code</label>
+                    <input type="text" class="nickname-input" id="room-code-input"
+                           placeholder="ABCD" maxlength="4" autocomplete="off"
+                           style="text-transform: uppercase; letter-spacing: 0.2em;">
+                </div>
+                <button class="modal-btn" id="btn-submit-nickname">Continue</button>
+                <button class="modal-btn secondary" id="btn-cancel-nickname">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Toast for errors -->
+        <div class="toast" id="toast"></div>
+    </div>
+
+    <script src="/js/multiplayer.js"></script>
+    <script>
+        let isCreating = false;
+
+        // Check if joining via link
+        const pathMatch = window.location.pathname.match(/^\/join\/([A-Za-z]{4})$/);
+        if (pathMatch) {
+            // Pre-fill room code and show join modal
+            setTimeout(() => {
+                document.getElementById('room-code-input').value = pathMatch[1].toUpperCase();
+                showJoinModal();
+            }, 100);
+        }
+
+        // Event listeners
+        document.getElementById('btn-create').addEventListener('click', () => {
+            isCreating = true;
+            document.getElementById('modal-title').textContent = 'Create Room';
+            document.getElementById('room-code-group').style.display = 'none';
+            document.getElementById('nickname-modal').style.display = 'flex';
+            document.getElementById('nickname-input').value = Multiplayer.savedNickname;
+            document.getElementById('nickname-input').focus();
+        });
+
+        document.getElementById('btn-join').addEventListener('click', showJoinModal);
+
+        function showJoinModal() {
+            isCreating = false;
+            document.getElementById('modal-title').textContent = 'Join Room';
+            document.getElementById('room-code-group').style.display = 'block';
+            document.getElementById('nickname-modal').style.display = 'flex';
+            document.getElementById('nickname-input').value = Multiplayer.savedNickname;
+            document.getElementById('nickname-input').focus();
+        }
+
+        document.getElementById('btn-cancel-nickname').addEventListener('click', () => {
+            document.getElementById('nickname-modal').style.display = 'none';
+            // If came from join link, redirect to home
+            if (pathMatch) {
+                window.history.pushState({}, '', '/');
+            }
+        });
+
+        document.getElementById('btn-submit-nickname').addEventListener('click', submitNickname);
+
+        document.getElementById('nickname-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (isCreating) {
+                    submitNickname();
+                } else {
+                    document.getElementById('room-code-input').focus();
+                }
+            }
+        });
+
+        document.getElementById('room-code-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitNickname();
+            }
+        });
+
+        async function submitNickname() {
+            const nickname = document.getElementById('nickname-input').value.trim();
+            if (!nickname) {
+                showToast('Please enter a nickname');
+                return;
+            }
+
+            const roomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+            if (!isCreating && roomCode.length !== 4) {
+                showToast('Room code must be 4 letters');
+                return;
+            }
+
+            try {
+                await Multiplayer.connect();
+
+                Multiplayer.on('room_joined', (data) => {
+                    // Redirect to game page
+                    window.location.href = `/game.html?room=${data.roomCode}`;
+                });
+
+                Multiplayer.on('error', (data) => {
+                    showToast(data.message);
+                });
+
+                if (isCreating) {
+                    Multiplayer.createRoom(nickname);
+                } else {
+                    Multiplayer.joinRoom(roomCode, nickname);
+                }
+            } catch (err) {
+                showToast('Failed to connect to server');
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('visible');
+            setTimeout(() => toast.classList.remove('visible'), 3000);
+        }
+    </script>
+</body>
+</html>

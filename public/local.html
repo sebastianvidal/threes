@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3s Dice Game - Local</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .setup-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .setup-screen h2 {
+            color: #fff;
+            margin-bottom: 30px;
+        }
+
+        .player-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .player-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid transparent;
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .player-btn.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .btn-start:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .current-player {
+            text-align: center;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .dice-area {
+            background: rgba(255,255,255,0.03);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dice-section-label {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .dice-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 70px;
+        }
+
+        .die {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+            position: relative;
+            touch-action: manipulation;
+        }
+
+        .die.three {
+            background: linear-gradient(135deg, #e91e9c 0%, #9c27b0 100%);
+            color: #fff;
+        }
+
+        .die.selected {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 4px #00ffcc, 0 0 12px rgba(0, 255, 204, 0.5);
+        }
+
+        .die.kept {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .die.rolling {
+            animation: roll 0.1s ease-in-out infinite;
+        }
+
+        @keyframes roll {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        .kept-area {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .kept-container {
+            min-height: 60px;
+        }
+
+        .kept-score {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .kept-score span {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+        }
+
+        .btn-roll {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-roll:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+
+        .btn-keep {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .btn-keep:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-new {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .message.winner {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+        }
+
+        .rules {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .rules h3 {
+            color: #fff;
+            margin-top: 0;
+            font-size: 0.9rem;
+        }
+
+        .rules ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .rules li {
+            margin-bottom: 5px;
+        }
+
+        .empty-dice {
+            color: #444;
+            font-style: italic;
+            padding: 20px;
+        }
+
+        .history {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .history h3 {
+            color: #fff;
+            margin-top: 0;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .history-round {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .history-round:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-round-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .history-round-score {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .history-dice {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .history-die {
+            width: 28px;
+            height: 28px;
+            background: #fff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .history-die.three {
+            background: linear-gradient(135deg, #e91e9c 0%, #9c27b0 100%);
+            color: #fff;
+        }
+
+        .history-empty {
+            color: #444;
+            font-style: italic;
+            font-size: 0.8rem;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 350px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal h2 {
+            margin: 0 0 20px 0;
+            color: #fff;
+            font-size: 1.5rem;
+        }
+
+        .modal-winner {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .modal-scores {
+            margin-bottom: 20px;
+        }
+
+        .modal-score-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .modal-score-row.winner-row {
+            background: rgba(102, 126, 234, 0.2);
+            border: 1px solid #667eea;
+        }
+
+        .modal-score-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .modal-player-name {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .modal-player-dice {
+            display: flex;
+            gap: 3px;
+        }
+
+        .modal-die {
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .modal-die.three {
+            background: linear-gradient(135deg, #e91e9c 0%, #9c27b0 100%);
+            color: #fff;
+        }
+
+        .modal-player-score {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1rem;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+
+        <div class="setup-screen" id="setup-screen">
+            <h1>3s</h1>
+            <p class="subtitle">The low-score dice game</p>
+            <h2>How many players?</h2>
+            <div class="player-select" id="player-select">
+                <button class="player-btn" data-players="1">1</button>
+                <button class="player-btn" data-players="2">2</button>
+                <button class="player-btn" data-players="3">3</button>
+                <button class="player-btn" data-players="4">4</button>
+                <button class="player-btn" data-players="5">5</button>
+                <button class="player-btn" data-players="6">6</button>
+            </div>
+            <button class="btn-start" id="btn-start" disabled>Start Game</button>
+        </div>
+
+        <div class="game-screen" id="game-screen">
+        <h1>3s</h1>
+        <p class="subtitle">The low-score dice game</p>
+
+        <div class="current-player" id="current-player">Player 1's Turn</div>
+
+        <div class="score-board">
+            <div class="score-item">
+                <div class="score-label">Rolls Left</div>
+                <div class="score-value" id="rolls-left">5</div>
+            </div>
+            <div class="score-item">
+                <div class="score-label">Current Score</div>
+                <div class="score-value" id="total-score">0</div>
+            </div>
+        </div>
+
+        <div class="dice-area">
+            <div class="dice-section-label">Active Dice (tap to select)</div>
+            <div class="dice-container" id="active-dice">
+                <div class="empty-dice">Press Roll to start</div>
+            </div>
+
+            <div class="kept-area">
+                <div class="dice-section-label">Kept Dice</div>
+                <div class="dice-container kept-container" id="kept-dice"></div>
+                <div class="kept-score">Round points: <span id="kept-score">0</span></div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn-roll" id="btn-roll">Roll</button>
+            <button class="btn-keep" id="btn-keep" disabled>Keep Selected</button>
+        </div>
+
+        <div class="message" id="message">Roll the dice! Try to get 3s (worth 0 points). Lowest score wins.</div>
+
+        <button class="btn-new" id="btn-new" style="width: 100%; margin-bottom: 20px;">New Game</button>
+
+        <div class="rules">
+            <h3>How to Play</h3>
+            <ul>
+                <li><strong>3s = 0 points</strong> (best!)</li>
+                <li>All other dice = face value</li>
+                <li>Up to 5 rolls to set aside dice</li>
+                <li>Must keep at least 1 die per roll</li>
+                <li>Lowest score wins!</li>
+            </ul>
+        </div>
+
+        <div class="history" id="history-section" style="display: none;">
+            <h3>Game History</h3>
+            <div id="history-content"></div>
+        </div>
+        </div>
+
+        <div class="modal-overlay" id="results-modal" style="display: none;">
+            <div class="modal">
+                <h2>Results</h2>
+                <div class="modal-winner" id="modal-winner"></div>
+                <div class="modal-scores" id="modal-scores"></div>
+                <button class="modal-btn" id="modal-play-again">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeDice = [];
+        let keptDice = [];
+        let selectedIndices = new Set();
+        let rollsLeft = 5;
+        let totalScore = 0;
+        let isRolling = false;
+        let hasRolledThisRound = false;
+        let hasKeptThisRoll = false;
+        let gameHistory = [];
+
+        let numPlayers = 0;
+        let currentPlayer = 1;
+        let playerScores = [];
+        let playerHistories = [];
+
+        const DICE_COUNT = 5;
+        const MAX_ROLLS = 5;
+
+        function rollDie() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
+        function calculateScore(dice) {
+            return dice.reduce((sum, d) => sum + (d === 3 ? 0 : d), 0);
+        }
+
+        function renderDice() {
+            const activeContainer = document.getElementById('active-dice');
+            const keptContainer = document.getElementById('kept-dice');
+
+            if (activeDice.length === 0 && rollsLeft === MAX_ROLLS) {
+                activeContainer.innerHTML = '<div class="empty-dice">Press Roll to start</div>';
+            } else if (activeDice.length === 0) {
+                activeContainer.innerHTML = '<div class="empty-dice">All dice kept</div>';
+            } else {
+                activeContainer.innerHTML = activeDice.map((d, i) => {
+                    const isThree = d === 3;
+                    const isSelected = selectedIndices.has(i);
+                    return `<div class="die ${isThree ? 'three' : ''} ${isSelected ? 'selected' : ''}"
+                                data-index="${i}">${d}</div>`;
+                }).join('');
+            }
+
+            if (keptDice.length === 0) {
+                keptContainer.innerHTML = '';
+            } else {
+                keptContainer.innerHTML = keptDice.map(d => {
+                    const isThree = d === 3;
+                    return `<div class="die kept ${isThree ? 'three' : ''}">${d}</div>`;
+                }).join('');
+            }
+
+            document.getElementById('kept-score').textContent = calculateScore(keptDice);
+            document.getElementById('rolls-left').textContent = rollsLeft;
+            document.getElementById('total-score').textContent = totalScore;
+
+            const rollBtn = document.getElementById('btn-roll');
+            const keepBtn = document.getElementById('btn-keep');
+
+            rollBtn.disabled = isRolling || rollsLeft === 0 || (activeDice.length === 0 && keptDice.length > 0) || (hasRolledThisRound && !hasKeptThisRoll);
+            keepBtn.disabled = isRolling || selectedIndices.size === 0;
+        }
+
+        function toggleSelect(index) {
+            if (isRolling) return;
+            if (selectedIndices.has(index)) {
+                selectedIndices.delete(index);
+            } else {
+                selectedIndices.add(index);
+            }
+            renderDice();
+        }
+
+        function roll() {
+            if (rollsLeft <= 0 || isRolling) return;
+            if (activeDice.length === 0 && keptDice.length > 0) return;
+            if (hasRolledThisRound && !hasKeptThisRoll) return;
+
+            isRolling = true;
+            hasKeptThisRoll = false;
+
+            if (activeDice.length === 0 && keptDice.length === 0) {
+                activeDice = Array(DICE_COUNT).fill(0);
+            }
+
+            hasRolledThisRound = true;
+            renderDice();
+
+            const activeContainer = document.getElementById('active-dice');
+            activeContainer.querySelectorAll('.die').forEach(die => {
+                die.classList.add('rolling');
+            });
+
+            setTimeout(function() {
+                activeDice = activeDice.map(function() { return rollDie(); });
+                rollsLeft--;
+                selectedIndices.clear();
+                isRolling = false;
+                renderDice();
+
+                if (rollsLeft === 0 && activeDice.length > 0) {
+                    setTimeout(function() {
+                        keptDice = keptDice.concat(activeDice);
+                        activeDice = [];
+                        endRound();
+                    }, 500);
+                }
+
+                updateMessage();
+            }, 300);
+        }
+
+        function keepSelected() {
+            if (selectedIndices.size === 0 || isRolling) return;
+
+            const toKeep = [];
+            const toStay = [];
+
+            activeDice.forEach(function(d, i) {
+                if (selectedIndices.has(i)) {
+                    toKeep.push(d);
+                } else {
+                    toStay.push(d);
+                }
+            });
+
+            keptDice = keptDice.concat(toKeep);
+            activeDice = toStay;
+            selectedIndices.clear();
+            hasKeptThisRoll = true;
+
+            renderDice();
+            updateMessage();
+
+            if (activeDice.length === 0) {
+                endRound();
+            }
+        }
+
+        function endRound() {
+            var roundScore = calculateScore(keptDice);
+            totalScore += roundScore;
+
+            gameHistory.push({
+                dice: keptDice.slice(),
+                score: roundScore
+            });
+
+            playerScores[currentPlayer - 1] = totalScore;
+            playerHistories[currentPlayer - 1] = gameHistory.slice();
+
+            var msg = document.getElementById('message');
+
+            if (currentPlayer >= numPlayers) {
+                showFinalResults();
+            } else {
+                msg.textContent = 'Player ' + currentPlayer + ' finished with ' + totalScore + ' points! Next player...';
+
+                setTimeout(function() {
+                    currentPlayer++;
+                    resetForNewPlayer();
+                }, 2000);
+            }
+
+            renderDice();
+        }
+
+        function resetForNewPlayer() {
+            activeDice = [];
+            keptDice = [];
+            selectedIndices.clear();
+            rollsLeft = MAX_ROLLS;
+            totalScore = 0;
+            isRolling = false;
+            hasRolledThisRound = false;
+            hasKeptThisRoll = false;
+            gameHistory = [];
+
+            document.getElementById('current-player').textContent = 'Player ' + currentPlayer + "'s Turn";
+            document.getElementById('total-score').textContent = '0';
+            renderDice();
+            updateMessage();
+        }
+
+        function showFinalResults() {
+            var minScore = Math.min.apply(null, playerScores);
+            var winners = [];
+            for (var i = 0; i < playerScores.length; i++) {
+                if (playerScores[i] === minScore) {
+                    winners.push(i + 1);
+                }
+            }
+
+            var winnerText = '';
+            if (numPlayers === 1) {
+                winnerText = 'Final score: ' + playerScores[0] + ' points!<br>' + getScoreComment(playerScores[0]);
+            } else if (winners.length === 1) {
+                winnerText = 'Player ' + winners[0] + ' wins!<br>with ' + minScore + ' points';
+            } else {
+                winnerText = "It's a tie!<br>Players " + winners.join(' & ') + ' with ' + minScore + ' points';
+            }
+            document.getElementById('modal-winner').innerHTML = winnerText;
+
+            var scoresHtml = '';
+            for (var p = 0; p < numPlayers; p++) {
+                var isWinner = playerScores[p] === minScore;
+                var history = playerHistories[p] || [];
+                var dice = (history.length > 0 && history[0].dice) ? history[0].dice : [];
+
+                scoresHtml += '<div class="modal-score-row ' + (isWinner ? 'winner-row' : '') + '">';
+                scoresHtml += '<span class="modal-player-name">Player ' + (p + 1) + '</span>';
+                scoresHtml += '<span class="modal-player-dice">';
+
+                for (var j = 0; j < dice.length; j++) {
+                    var d = dice[j];
+                    var isThree = d === 3;
+                    scoresHtml += '<span class="modal-die ' + (isThree ? 'three' : '') + '">' + d + '</span>';
+                }
+
+                scoresHtml += '</span>';
+                scoresHtml += '<span class="modal-player-score">' + playerScores[p] + '</span>';
+                scoresHtml += '</div>';
+            }
+            document.getElementById('modal-scores').innerHTML = scoresHtml;
+
+            document.getElementById('results-modal').style.display = 'flex';
+        }
+
+        function getScoreComment(score) {
+            if (score === 0) return "PERFECT! All 3s!";
+            if (score <= 10) return "Incredible!";
+            if (score <= 20) return "Excellent!";
+            if (score <= 30) return "Great job!";
+            if (score <= 50) return "Not bad!";
+            return "Better luck next time!";
+        }
+
+        function updateMessage() {
+            var msg = document.getElementById('message');
+            if (msg.classList.contains('winner')) return;
+
+            if (rollsLeft === MAX_ROLLS && activeDice.length === 0) {
+                msg.textContent = "Roll the dice! Try to get 3s (worth 0 points).";
+            } else if (hasRolledThisRound && !hasKeptThisRoll && activeDice.length > 0) {
+                msg.textContent = "Keep at least 1 die before rolling again.";
+            } else if (rollsLeft > 0 && activeDice.length > 0) {
+                var threes = activeDice.filter(function(d) { return d === 3; }).length;
+                if (threes > 0) {
+                    msg.textContent = 'Nice! ' + threes + ' three' + (threes > 1 ? 's' : '') + '! Select dice to keep.';
+                } else {
+                    msg.textContent = rollsLeft + ' roll' + (rollsLeft > 1 ? 's' : '') + ' left. Select dice to keep.';
+                }
+            } else if (rollsLeft === 0) {
+                msg.textContent = "No rolls left - keeping remaining dice...";
+            }
+        }
+
+        function newGame() {
+            activeDice = [];
+            keptDice = [];
+            selectedIndices.clear();
+            rollsLeft = MAX_ROLLS;
+            totalScore = 0;
+            isRolling = false;
+            hasRolledThisRound = false;
+            hasKeptThisRoll = false;
+            gameHistory = [];
+            numPlayers = 0;
+            currentPlayer = 1;
+            playerScores = [];
+            playerHistories = [];
+
+            var msg = document.getElementById('message');
+            msg.classList.remove('winner');
+
+            document.getElementById('history-section').style.display = 'none';
+            document.getElementById('results-modal').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'block';
+
+            var btns = document.querySelectorAll('.player-btn');
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].classList.remove('selected');
+            }
+            document.getElementById('btn-start').disabled = true;
+
+            renderDice();
+            updateMessage();
+        }
+
+        function startGame() {
+            if (numPlayers === 0) return;
+
+            playerScores = new Array(numPlayers).fill(0);
+            playerHistories = new Array(numPlayers).fill(null);
+            currentPlayer = 1;
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('current-player').textContent = 'Player ' + currentPlayer + "'s Turn";
+
+            renderDice();
+            updateMessage();
+        }
+
+        document.getElementById('active-dice').addEventListener('click', function(e) {
+            var die = e.target.closest('.die');
+            if (die && die.dataset.index !== undefined) {
+                toggleSelect(parseInt(die.dataset.index));
+            }
+        });
+
+        document.getElementById('btn-roll').addEventListener('click', function(e) {
+            e.preventDefault();
+            roll();
+        });
+
+        document.getElementById('btn-keep').addEventListener('click', function(e) {
+            e.preventDefault();
+            keepSelected();
+        });
+
+        document.getElementById('btn-new').addEventListener('click', function(e) {
+            e.preventDefault();
+            newGame();
+        });
+
+        document.getElementById('player-select').addEventListener('click', function(e) {
+            var btn = e.target.closest('.player-btn');
+            if (btn) {
+                var btns = document.querySelectorAll('.player-btn');
+                for (var i = 0; i < btns.length; i++) {
+                    btns[i].classList.remove('selected');
+                }
+                btn.classList.add('selected');
+                numPlayers = parseInt(btn.dataset.players);
+                document.getElementById('btn-start').disabled = false;
+            }
+        });
+
+        document.getElementById('btn-start').addEventListener('click', function(e) {
+            e.preventDefault();
+            startGame();
+        });
+
+        document.getElementById('modal-play-again').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('results-modal').style.display = 'none';
+            newGame();
+        });
+
+        renderDice();
+    </script>
+</body>
+</html>
