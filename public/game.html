@@ -79,17 +79,6 @@
                 <div id="other-players-content"></div>
             </div>
 
-            <div class="chat-container" id="chat-container">
-                <div class="chat-header" id="chat-header">
-                    <h3>Chat</h3>
-                    <span class="chat-badge" id="chat-badge"></span>
-                </div>
-                <div class="chat-messages" id="chat-messages"></div>
-                <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
-                    <button class="chat-send-btn" id="btn-send-chat">Send</button>
-                </div>
-            </div>
 
             <div class="rules">
                 <h3>How to Play</h3>
@@ -117,6 +106,23 @@
 
         <!-- Toast -->
         <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- Floating Chat -->
+    <button class="chat-fab" id="chat-fab">
+        <span class="chat-fab-icon">💬</span>
+        <span class="chat-fab-badge" id="chat-badge"></span>
+    </button>
+    <div class="chat-floating" id="chat-container">
+        <div class="chat-header" id="chat-header">
+            <h3>Chat</h3>
+            <button class="chat-close" id="chat-close">✕</button>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200">
+            <button class="chat-send-btn" id="btn-send-chat">Send</button>
+        </div>
     </div>
 
     <script src="/js/game-core.js"></script>
@@ -618,10 +624,10 @@
             messagesDiv.appendChild(messageEl);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-            // Show badge if chat is collapsed and message is from someone else
+            // Show badge if chat is closed and message is from someone else
             if (!isMe) {
                 const container = document.getElementById('chat-container');
-                if (container.classList.contains('collapsed')) {
+                if (!container.classList.contains('open')) {
                     unreadMessages++;
                     updateChatBadge();
                 }
@@ -655,13 +661,16 @@
             }
         });
 
-        document.getElementById('chat-header').addEventListener('click', () => {
+        document.getElementById('chat-fab').addEventListener('click', () => {
             const container = document.getElementById('chat-container');
-            container.classList.toggle('collapsed');
-            if (!container.classList.contains('collapsed')) {
-                unreadMessages = 0;
-                updateChatBadge();
-            }
+            container.classList.add('open');
+            unreadMessages = 0;
+            updateChatBadge();
+            document.getElementById('chat-input').focus();
+        });
+
+        document.getElementById('chat-close').addEventListener('click', () => {
+            document.getElementById('chat-container').classList.remove('open');
         });
 
         function showToast(message) {
